@@ -1,13 +1,13 @@
 package carsharing;
 
-public class PrintMenu {
+public class MenuPrinter {
 
-    void mainMenu(){
+    public void printMainMenu(){
         System.out.println("1. Log in as a manager\n" +
                            "0. Exit");
     }
 
-    void managerMenu(){
+    public void printManagerMenu(){
         System.out.println("1. Company list\n" +
                            "2. Create a company\n" +
                            "0. Back");

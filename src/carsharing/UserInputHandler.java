@@ -2,40 +2,47 @@ package carsharing;
 
 import java.util.Scanner;
 
-public class HandleUserInput {
-    private PrintMenu CompanyMenu;
+public class UserInputHandler {
+    private final MenuPrinter menuPrinter;
 
-    HandleUserInput(){
-        CompanyMenu = new PrintMenu();
+    UserInputHandler(){
+        menuPrinter = new MenuPrinter();
     }
 
     void manageInput(){
         Scanner scanner = new Scanner(System.in);
-        boolean continueApp = true;
-        while (continueApp){
-            CompanyMenu.mainMenu();
+        while (true){
+            menuPrinter.printMainMenu();
             String userInput = scanner.nextLine();
             System.out.println();
+
             if (userInput.equals("0")){
-                continueApp = false;
+                return;
             }
-            while (continueApp) {
-                CompanyMenu.managerMenu();
-                userInput = scanner.nextLine();
-                if (userInput.equals("0")) {
+
+            managerMenu(scanner);
+        }
+    }
+
+    private void managerMenu(Scanner scanner) {
+        while (true) {
+            menuPrinter.printManagerMenu();
+            String userInput = scanner.nextLine();
+
+            switch (userInput){
+                case "0" -> {
                     System.out.println();
-                    break;
+                    return;
                 }
-                if (userInput.equals("1")) {
+                case "1" -> {
                     System.out.println("print Company list!!");
                     System.out.println();
                 }
-                if (userInput.equals("2")) {
+                case "2" -> {
                     System.out.println("We create a company named XXX");
                     System.out.println();
                 }
             }
-
         }
     }
 }

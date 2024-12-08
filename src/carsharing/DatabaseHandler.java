@@ -1,9 +1,11 @@
-package carsharing;
+/*package carsharing;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 public class DatabaseHandler {
+
+
     void insert(){
         String insert = "INSERT INTO artists (name, origin, songs_number) VALUES (?, ?, ?)";
 
@@ -17,4 +19,4 @@ public class DatabaseHandler {
             e.printStackTrace();
         }
     }
-}
+}*/

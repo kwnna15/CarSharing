@@ -41,16 +41,14 @@ public class Main {
             System.out.println("Creating table in given database...");
             stmt = conn.createStatement();
             conn.setAutoCommit(true);
-            String drop = "DROP TABLE   COMPANY ";
-            String sql =  "CREATE TABLE   COMPANY " +
+            String sql =  "CREATE TABLE IF NOT EXISTS COMPANY" +
                           "(ID INTEGER not NULL AUTO_INCREMENT, " +
                           " NAME VARCHAR(255) not NULL UNIQUE, " +
                           " PRIMARY KEY ( ID ))";
-            //stmt.executeUpdate(drop);
             stmt.executeUpdate(sql);
             System.out.println("Created table in given database...");
 
-            HandleUserInput UI = new HandleUserInput();
+            UserInputHandler UI = new UserInputHandler();
             UI.manageInput();
             // STEP 4: Clean-up environment
             stmt.close();
