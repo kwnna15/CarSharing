@@ -7,10 +7,15 @@ public class MenuPrinter {
                            "0. Exit");
     }
 
-    public void printManagerMenu(){
+    public void printCompanyMenu(){
         System.out.println("1. Company list\n" +
                            "2. Create a company\n" +
                            "0. Back");
     }
 
+    public void printCarMenu(){
+        System.out.println("1. Car list\n" +
+                           "2. Create a car\n" +
+                           "0. Back");
+    }
 }

@@ -6,7 +6,7 @@ public class DatabaseHandler {
 
     private Connection conn = null;
 
-    void createDatabase(String jdbcDriver, String dbUrl, String user, String pass){
+    void createDatabase(String jdbcDriver, String dbUrl, String user, String pass) {
         Statement stmt = null;
         try {
             // STEP 1: Register JDBC driver
@@ -23,21 +23,34 @@ public class DatabaseHandler {
             stmt = conn.createStatement();
             conn.setAutoCommit(true);
 
-            String sql =  "CREATE TABLE IF NOT EXISTS COMPANY" +
-                          "(ID INTEGER not NULL AUTO_INCREMENT, " +
-                          " NAME VARCHAR(255) not NULL UNIQUE, " +
-                          " PRIMARY KEY ( ID ))";
-            stmt.executeUpdate(sql);
-            System.out.println("Created table in given database...");
+//            String drop = "drop table car";
+//            stmt.executeUpdate(drop);
+
+            String companySql = "CREATE TABLE IF NOT EXISTS COMPANY" +
+                         "(ID INTEGER not NULL AUTO_INCREMENT, " +
+                         " NAME VARCHAR(255) not NULL UNIQUE, " +
+                         " PRIMARY KEY ( ID ))";
+            stmt.executeUpdate(companySql);
+
+            String carsSql = "CREATE TABLE IF NOT EXISTS CAR" +
+                             "(ID INTEGER not NULL AUTO_INCREMENT, " +
+                             " NAME VARCHAR(255) not NULL, " +
+                             " COMPANY_ID INTEGER not NULL, " +
+                             " PRIMARY KEY ( ID ), " +
+                             " FOREIGN KEY (COMPANY_ID) REFERENCES COMPANY(ID))";
+
+            stmt.executeUpdate(carsSql);
+
+            System.out.println("Created tables in given database...");
 
             // STEP 4: Clean-up environment
             stmt.close();
-        } catch(Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {
-            try{
-                if(stmt!=null) stmt.close();
-            } catch(SQLException e) {
+            try {
+                if (stmt != null) stmt.close();
+            } catch (SQLException e) {
                 System.out.println("Unable to close statement");
             }
         }
@@ -49,7 +62,7 @@ public class DatabaseHandler {
         }
     }
 
-    void insert(String companyName){
+    void insertCompanyName(String companyName) {
         String insert = "INSERT INTO COMPANY (id, name) VALUES (default, ?)";
 
         try (PreparedStatement preparedStatement = conn.prepareStatement(insert)) {
@@ -61,19 +74,55 @@ public class DatabaseHandler {
         }
     }
 
-    void selectAll() throws SQLException {
+    void insertNewCar(String carName, int companyId) {
+        String insert = "INSERT INTO CAR (ID, name, COMPANY_ID) VALUES (default, ?, ?)";
+
+        try (PreparedStatement preparedStatement = conn.prepareStatement(insert)) {
+            preparedStatement.setString(1, carName);
+            preparedStatement.setInt(2, companyId);
+            preparedStatement.executeUpdate();
+            System.out.println("The car was added!");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    boolean selectAllCompanies() throws SQLException {
         Statement statement = conn.createStatement();
-        String select= "SELECT * FROM COMPANY ORDER BY ID";
-        try (ResultSet companies = statement.executeQuery(select)){
-            if (!companies.isBeforeFirst()){
-                System.out.println("\nThe company list is empty!");
-            }
-            else{
-                System.out.println("\nCompany list:");
-                while (companies.next()){
+        String select = "SELECT * FROM COMPANY ORDER BY ID";
+        try (ResultSet companies = statement.executeQuery(select)) {
+            if (!companies.isBeforeFirst()) {
+                System.out.println("The company list is empty!");
+                return false;
+            } else {
+                //System.out.println("\nCompany list:");
+                while (companies.next()) {
                     int id = companies.getInt("id");
                     String name = companies.getString("name");
                     System.out.println(id + ". " + name);
+                }
+                return true;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    void selectAllCarsByCompany(int companyId) throws SQLException {
+        Statement statement = conn.createStatement();
+        String select = "SELECT CAR.ID, CAR.NAME FROM CAR " +
+                        "WHERE CAR.COMPANY_ID = "+ String.valueOf(companyId) +" ORDER BY CAR.ID";
+        try (ResultSet cars = statement.executeQuery(select)) {
+            if (!cars.isBeforeFirst()) {
+                System.out.println("\nThe car list is empty!");
+            } else {
+                System.out.println("\nCar list:");
+                int index = 1;
+                while (cars.next()) {
+                    String name = cars.getString("name");
+                    System.out.println(index + ". " + name);
+                    index++;
                 }
             }
         } catch (SQLException e) {

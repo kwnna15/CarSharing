@@ -38,7 +38,7 @@ public class UserInputHandler {
 
     private void managerMenu(Scanner scanner) throws SQLException {
         while (true) {
-            menuPrinter.printManagerMenu();
+            menuPrinter.printCompanyMenu();
             String userInput = scanner.nextLine();
 
             switch (userInput){
@@ -47,14 +47,48 @@ public class UserInputHandler {
                     return;
                 }
                 case "1" -> {
-                    databaseHandler.selectAll();
                     System.out.println();
+                    boolean companiesExist = databaseHandler.selectAllCompanies();
+                    if (companiesExist) {
+                        System.out.println("0. Back");
+                        System.out.println("\nChoose a company:");
+                        int companyId = Integer.valueOf(scanner.nextLine());
+                        if (companyId != 0) {
+                            carMenu(scanner, companyId);
+                        }
+                    } else {
+                        System.out.println();
+                    }
+
                 }
                 case "2" -> {
                     System.out.println("\nEnter the company name:");
                     String companyName = scanner.nextLine();
-                    databaseHandler.insert(companyName);
+                    databaseHandler.insertCompanyName(companyName);
                     System.out.println();
+                }
+            }
+        }
+    }
+
+    private void carMenu(Scanner scanner, int companyId) throws SQLException {
+        while (true) {
+            System.out.println();
+            menuPrinter.printCarMenu();
+            String userInput = scanner.nextLine();
+
+            switch (userInput){
+                case "0" -> {
+                    System.out.println();
+                    return;
+                }
+                case "1" -> {
+                    databaseHandler.selectAllCarsByCompany(companyId);
+                }
+                case "2" -> {
+                    System.out.println("\nEnter the car name:");
+                    String carName = scanner.nextLine();
+                    databaseHandler.insertNewCar(carName, companyId);
                 }
             }
         }
