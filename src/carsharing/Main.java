@@ -21,7 +21,6 @@ public class Main {
         } else{
             dbUrl = dbUrl + "/" + "CompanyDB";
         }
-
         UserInputHandler inputHandler= new UserInputHandler(JDBC_DRIVER, dbUrl, USER, PASS);
         inputHandler.manageInput();
     }

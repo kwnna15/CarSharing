@@ -32,7 +32,16 @@ public class UserInputHandler {
                 databaseHandler.closeConnection();
                 return;
             }
-            managerMenu(scanner);
+
+            if (userInput.equals("1")){
+                managerMenu(scanner);
+            }
+            if (userInput.equals("2")){
+                selectCustomerMenu(scanner);
+            }
+            if (userInput.equals("3")){
+                createCustomer(scanner);
+            }
         }
     }
 
@@ -59,7 +68,6 @@ public class UserInputHandler {
                     } else {
                         System.out.println();
                     }
-
                 }
                 case "2" -> {
                     System.out.println("\nEnter the company name:");
@@ -92,5 +100,59 @@ public class UserInputHandler {
                 }
             }
         }
+    }
+
+    private void selectCustomerMenu(Scanner scanner) throws SQLException {
+        while (true) {
+           // System.out.println();
+            boolean customersExist = databaseHandler.selectAllCustomers();
+            if (customersExist) {
+                System.out.println("0. Back");
+                int customerId = Integer.valueOf(scanner.nextLine());
+                System.out.println();
+                if (customerId != 0) {
+                    customerMenu(scanner, customerId);
+                } else {
+                    return;
+                }
+            } else {
+                System.out.println();
+                return;
+            }
+        }
+    }
+
+    private void customerMenu(Scanner scanner, int customerId) throws SQLException {
+        while (true) {
+            //System.out.println();
+            menuPrinter.printCustomerMenu();
+            String userInput = scanner.nextLine();
+            System.out.println();
+
+            switch (userInput){
+                case "0" -> {
+                    return;
+                }
+                case "1" -> {
+                    //databaseHandler.selectAllCarsByC(companyId);
+                }
+                case "2" -> {
+                    /*System.out.println("\nEnter the car name:");
+                    String carName = scanner.nextLine();
+                    databaseHandler.insertNewCar(carName, companyId);*/
+                }
+                case "3" -> {
+                    databaseHandler.selectAllCarsByCustomer(customerId);
+                }
+            }
+            System.out.println();
+        }
+    }
+
+    private void createCustomer(Scanner scanner){
+        System.out.println("Enter the customer name:");
+        String customerName = scanner.nextLine();
+        databaseHandler.insertNewCustomer(customerName);
+        System.out.println();
     }
 }
