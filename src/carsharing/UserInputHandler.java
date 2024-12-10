@@ -11,7 +11,7 @@ public class UserInputHandler {
     private final String user;
     private final String pass;
 
-    UserInputHandler(String jdbcDriver, String dbUrl, String user, String pass){
+    UserInputHandler(String jdbcDriver, String dbUrl, String user, String pass) {
         menuPrinter = new MenuPrinter();
         databaseHandler = new DatabaseHandler();
         this.jdbcDriver = jdbcDriver;
@@ -23,23 +23,23 @@ public class UserInputHandler {
     void manageInput() throws SQLException {
         Scanner scanner = new Scanner(System.in);
         databaseHandler.createDatabase(jdbcDriver, dbUrl, user, pass);
-        while (true){
+        while (true) {
             menuPrinter.printMainMenu();
             String userInput = scanner.nextLine();
             System.out.println();
 
-            if (userInput.equals("0")){
+            if (userInput.equals("0")) {
                 databaseHandler.closeConnection();
                 return;
             }
 
-            if (userInput.equals("1")){
+            if (userInput.equals("1")) {
                 managerMenu(scanner);
             }
-            if (userInput.equals("2")){
+            if (userInput.equals("2")) {
                 selectCustomerMenu(scanner);
             }
-            if (userInput.equals("3")){
+            if (userInput.equals("3")) {
                 createCustomer(scanner);
             }
         }
@@ -50,7 +50,7 @@ public class UserInputHandler {
             menuPrinter.printCompanyMenu();
             String userInput = scanner.nextLine();
 
-            switch (userInput){
+            switch (userInput) {
                 case "0" -> {
                     System.out.println();
                     return;
@@ -85,7 +85,7 @@ public class UserInputHandler {
             menuPrinter.printCarMenu();
             String userInput = scanner.nextLine();
 
-            switch (userInput){
+            switch (userInput) {
                 case "0" -> {
                     System.out.println();
                     return;
@@ -104,7 +104,7 @@ public class UserInputHandler {
 
     private void selectCustomerMenu(Scanner scanner) throws SQLException {
         while (true) {
-           // System.out.println();
+            // System.out.println();
             boolean customersExist = databaseHandler.selectAllCustomers();
             if (customersExist) {
                 System.out.println("0. Back");
@@ -129,12 +129,26 @@ public class UserInputHandler {
             String userInput = scanner.nextLine();
             System.out.println();
 
-            switch (userInput){
+            switch (userInput) {
                 case "0" -> {
                     return;
                 }
                 case "1" -> {
-                    //databaseHandler.selectAllCarsByC(companyId);
+                    if (databaseHandler.customerHasRentedACar(customerId)){
+                        System.out.println("You've already rented a car!");
+                        break;
+                    }
+                    boolean companiesExist = databaseHandler.selectAllCompanies();
+                    if (companiesExist) {
+                        System.out.println("0. Back");
+                        System.out.println("\nChoose a company:");
+                        int companyId = Integer.valueOf(scanner.nextLine());
+                        if (companyId != 0) {
+                            rentACar(scanner, companyId, customerId);
+                        }
+                    } else {
+                        System.out.println();
+                    }
                 }
                 case "2" -> {
                     /*System.out.println("\nEnter the car name:");
@@ -149,7 +163,22 @@ public class UserInputHandler {
         }
     }
 
-    private void createCustomer(Scanner scanner){
+    private void rentACar(Scanner scanner, int companyId, int customerID) throws SQLException {
+        boolean carsExist = databaseHandler.selectAllCarsByCompany(companyId);
+        if (carsExist) {
+            System.out.println("0. Back");
+            System.out.println("\nChoose a car:");
+            int carId = Integer.valueOf(scanner.nextLine());
+            if (carId != 0) {
+                databaseHandler.rentCar(scanner, carId, customerID);
+            }
+        }
+        else {
+            System.out.println("No available cars in the "+databaseHandler.findCompanyName(companyId)+" company");
+        }
+    }
+
+    private void createCustomer(Scanner scanner) {
         System.out.println("Enter the customer name:");
         String customerName = scanner.nextLine();
         databaseHandler.insertNewCustomer(customerName);
