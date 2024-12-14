@@ -1,7 +1,10 @@
 package carsharing;
 
+import carsharing.domain.Car;
+import carsharing.domain.Customer;
+
 import java.sql.*;
-import java.util.Scanner;
+import java.util.*;
 
 public class DatabaseHandler {
 
@@ -26,30 +29,30 @@ public class DatabaseHandler {
 
             /*String drop1 = "drop table car";
             stmt.executeUpdate(drop1);*/
-            String drop = "drop table customer";
-            stmt.executeUpdate(drop);
+            /*String drop = "drop table customer";
+            stmt.executeUpdate(drop);*/
 
             String companySql = "CREATE TABLE IF NOT EXISTS COMPANY" +
-                                "(ID INTEGER not NULL AUTO_INCREMENT, " +
-                                " NAME VARCHAR(255) not NULL UNIQUE, " +
-                                " PRIMARY KEY ( ID ))";
+                    "(ID INTEGER not NULL AUTO_INCREMENT, " +
+                    " NAME VARCHAR(255) not NULL UNIQUE, " +
+                    " PRIMARY KEY ( ID ))";
             stmt.executeUpdate(companySql);
 
             String carsSql = "CREATE TABLE IF NOT EXISTS CAR" +
-                             "(ID INTEGER not NULL AUTO_INCREMENT, " +
-                             " NAME VARCHAR(255) not NULL, " +
-                             " COMPANY_ID INTEGER not NULL, " +
-                             " PRIMARY KEY ( ID ), " +
-                             " FOREIGN KEY (COMPANY_ID) REFERENCES COMPANY(ID))";
+                    "(ID INTEGER not NULL AUTO_INCREMENT, " +
+                    " NAME VARCHAR(255) not NULL, " +
+                    " COMPANY_ID INTEGER not NULL, " +
+                    " PRIMARY KEY ( ID ), " +
+                    " FOREIGN KEY (COMPANY_ID) REFERENCES COMPANY(ID))";
 
             stmt.executeUpdate(carsSql);
 
             String customerSql = "CREATE TABLE IF NOT EXISTS CUSTOMER" +
-                                 "(ID INTEGER not NULL AUTO_INCREMENT, " +
-                                 " NAME VARCHAR(255) not NULL UNIQUE, " +
-                                 " RENTED_CAR_ID INTEGER, " +
-                                 " PRIMARY KEY ( ID ), " +
-                                 " FOREIGN KEY (RENTED_CAR_ID) REFERENCES CAR(ID))";
+                    "(ID INTEGER not NULL AUTO_INCREMENT, " +
+                    " NAME VARCHAR(255) not NULL UNIQUE, " +
+                    " RENTED_CAR_ID INTEGER, " +
+                    " PRIMARY KEY ( ID ), " +
+                    " FOREIGN KEY (RENTED_CAR_ID) REFERENCES CAR(ID))";
 
             stmt.executeUpdate(customerSql);
 
@@ -111,14 +114,29 @@ public class DatabaseHandler {
         }
     }
 
-    void rentCar(Scanner scanner, int carId, int customerID) throws SQLException {
+    void rentCar(int carId, int customerID) throws SQLException {
         Statement statement = conn.createStatement();
-        String update = "UPDATE CUSTOMER SET RENTED_CAR_ID=" + carId;
+        String update = "UPDATE CUSTOMER SET RENTED_CAR_ID=" + carId +
+                " WHERE ID = " + customerID;
+
         try {
-            boolean isUpdated = statement.execute(update);
-            if (isUpdated) {
-                System.out.println("You rented " + findCarName(carId));
+            int updateRental = statement.executeUpdate(update);
+            if (updateRental != 0) {
+                System.out.println("You rented '" + findCarName(carId)+"'");
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    public void returnCar(int customerId) throws SQLException {
+        Statement statement = conn.createStatement();
+        String update = "UPDATE CUSTOMER SET RENTED_CAR_ID=NULL" +
+                " WHERE ID = " + customerId;
+
+        try {
+            statement.executeUpdate(update);
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -145,56 +163,92 @@ public class DatabaseHandler {
         }
     }
 
-    boolean selectAllCustomers() throws SQLException {
+    List<Customer> selectAllCustomers() throws SQLException {
         Statement statement = conn.createStatement();
         String select = "SELECT * FROM CUSTOMER ORDER BY ID";
         try (ResultSet customers = statement.executeQuery(select)) {
             if (!customers.isBeforeFirst()) {
                 System.out.println("The customer list is empty!");
-                return false;
+                return List.of();
             } else {
                 System.out.println("Choose a customer:");
+                List<Customer> customerList = new ArrayList<>();
                 while (customers.next()) {
-                    int id = customers.getInt("id");
-                    String name = customers.getString("name");
-                    System.out.println(id + ". " + name);
+                    Customer customer = getCustomer(customers);
+                    customerList.add(customer);
+                    System.out.println(customer.customerId() + ". " + customer.name());
                 }
-                return true;
+                return customerList;
             }
         } catch (SQLException e) {
             e.printStackTrace();
-            return false;
+            return List.of();
         }
     }
 
-    boolean selectAllCarsByCompany(int companyId) throws SQLException {
+    List<Car> selectAllAveilableCarsByCompany(int companyId) throws SQLException {
         Statement statement = conn.createStatement();
-        String select = "SELECT CAR.ID, CAR.NAME FROM CAR " +
-                        "WHERE CAR.COMPANY_ID = " + String.valueOf(companyId) + " ORDER BY CAR.ID";
+        String select = """
+                SELECT *
+                FROM Car c
+                LEFT JOIN Customer cu ON c.id = cu.rented_car_id
+                WHERE cu.rented_car_id IS NULL
+                  AND c.company_id = %s
+                """.formatted(companyId);
         try (ResultSet cars = statement.executeQuery(select)) {
             if (!cars.isBeforeFirst()) {
-                System.out.println("\nThe car list is empty!");
-                return false;
+                return List.of();
             } else {
                 System.out.println("\nCar list:");
                 int index = 1;
+                List<Car> companyCars = new ArrayList<>();
                 while (cars.next()) {
+                    int id = cars.getInt("id");
                     String name = cars.getString("name");
+                    companyCars.add(new Car(id, name));
                     System.out.println(index + ". " + name);
                     index++;
                 }
-                return true;
+                return companyCars;
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return false;
+        return List.of();
+
+    }
+
+    List<Car> selectAllCarsByCompany(int companyId) throws SQLException {
+        Statement statement = conn.createStatement();
+        String select = "SELECT CAR.ID, CAR.NAME FROM CAR " +
+                "WHERE CAR.COMPANY_ID = " + companyId + " ORDER BY CAR.ID";
+        try (ResultSet cars = statement.executeQuery(select)) {
+            if (!cars.isBeforeFirst()) {
+                System.out.println("\nThe car list is empty!");
+                return List.of();
+            } else {
+                System.out.println("\nCar list:");
+                int index = 1;
+                List<Car> companyCars = new ArrayList<>();
+                while (cars.next()) {
+                    int id = cars.getInt("id");
+                    String name = cars.getString("name");
+                    companyCars.add(new Car(id, name));
+                    System.out.println(index + ". " + name);
+                    index++;
+                }
+                return companyCars;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return List.of();
     }
 
     void selectAllCarsByCustomer(int customerId) throws SQLException {
         Statement statement = conn.createStatement();
         String select = "SELECT CUSTOMER.RENTED_CAR_ID FROM CUSTOMER " +
-                        "WHERE CUSTOMER.ID = " + String.valueOf(customerId);
+                "WHERE CUSTOMER.ID = " + customerId;
         try (ResultSet car = statement.executeQuery(select)) {
             if (!car.isBeforeFirst()) {
                 System.out.println("You didn't rent a car!");
@@ -223,13 +277,13 @@ public class DatabaseHandler {
     String findCarName(int carId) throws SQLException {
         Statement statement = conn.createStatement();
         String select = "SELECT CAR.NAME FROM CAR " +
-                        "WHERE CAR.ID = " + String.valueOf(carId);
+                "WHERE CAR.ID = " + carId;
         try (ResultSet car = statement.executeQuery(select)) {
-            if (!car.isBeforeFirst()) {
+            if (car.next()) {
+                return car.getString("name");
+            } else {
                 System.out.println("Couldnt find the car with id: " + carId);
                 return null;
-            } else {
-                return car.getString("name");
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -239,57 +293,65 @@ public class DatabaseHandler {
     String findCompanyName(int companyId) throws SQLException {
         Statement statement = conn.createStatement();
         String select = "SELECT COMPANY.NAME FROM COMPANY " +
-                        "WHERE COMPANY.ID = " + String.valueOf(companyId);
+                "WHERE COMPANY.ID = " + String.valueOf(companyId);
         try (ResultSet company = statement.executeQuery(select)) {
-            if (!company.isBeforeFirst()) {
-                System.out.println("Couldnt find the car with id: " + companyId);
-                return null;
-            } else {
+            if (company.next()) {
                 return company.getString("name");
+            } else {
+                throw new IllegalStateException("Unknown company %s".formatted(companyId));
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    Customer getCustomer(int customerId) throws SQLException {
+        Statement statement = conn.createStatement();
+        String select = "SELECT * FROM CUSTOMER " +
+                "WHERE CUSTOMER.ID = " + String.valueOf(customerId);
+        try (ResultSet customer = statement.executeQuery(select)) {
+            if (customer.next()) {
+                return getCustomer(customer);
+            } else {
+                throw new IllegalStateException("Unknown customer %s".formatted(customerId));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Customer getCustomer(ResultSet customer) throws SQLException {
+        int id = customer.getInt("id");
+        String name = customer.getString("name");
+        int rentedCarId = customer.getInt("rented_car_id");
+        return new Customer(id, name, rentedCarId);
     }
 
     String findCompanyNameByCarID(int carId) throws SQLException {
         Statement statement = conn.createStatement();
         int companyId;
         String selectCompanyId = "SELECT CAR.COMPANY_ID FROM CAR " +
-                                 "WHERE CAR.ID = " + String.valueOf(carId);
+                "WHERE CAR.ID = " + carId;
 
         try (ResultSet companyIDs = statement.executeQuery(selectCompanyId)) {
-            if (!companyIDs.isBeforeFirst()) {
+            if (companyIDs.next()) {
+                companyId = companyIDs.getInt("COMPANY_ID");
+            } else {
                 System.out.println("Couldnt find the company with id: " + carId);
                 return null;
-            } else {
-                companyId = companyIDs.getInt("COMPANY_ID");
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
         String selectCompanyName = "SELECT COMPANY.NAME FROM COMPANY " +
-                                   "WHERE COMPANY.ID = " + String.valueOf(companyId);
+                "WHERE COMPANY.ID = " + companyId;
         try (ResultSet companyNames = statement.executeQuery(selectCompanyName)) {
-            if (!companyNames.isBeforeFirst()) {
+            if (companyNames.next()) {
+                return companyNames.getString("name");
+            } else {
                 System.out.println("Couldnt find the company with id: " + carId);
                 return null;
-            } else {
-                return companyNames.getString("name");
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    boolean customerHasRentedACar(int customerId) throws SQLException {
-        Statement statement = conn.createStatement();
-        String select = "SELECT CUSTOMER.RENTED_CAR_ID FROM CUSTOMER " +
-                        "WHERE CUSTOMER.ID = " + String.valueOf(customerId);
-        try (ResultSet carInfo = statement.executeQuery(select)) {
-            int numberOfCars;
-            return !carInfo.isBeforeFirst();
-
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

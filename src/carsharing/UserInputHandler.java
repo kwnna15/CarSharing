@@ -1,6 +1,11 @@
 package carsharing;
 
+import carsharing.domain.Car;
+import carsharing.domain.Customer;
+
 import java.sql.SQLException;
+import java.util.List;
+import java.util.Optional;
 import java.util.Scanner;
 
 public class UserInputHandler {
@@ -105,13 +110,16 @@ public class UserInputHandler {
     private void selectCustomerMenu(Scanner scanner) throws SQLException {
         while (true) {
             // System.out.println();
-            boolean customersExist = databaseHandler.selectAllCustomers();
-            if (customersExist) {
+            List<Customer> customers = databaseHandler.selectAllCustomers();
+            if (!customers.isEmpty()) {
                 System.out.println("0. Back");
-                int customerId = Integer.valueOf(scanner.nextLine());
+                int index = Integer.valueOf(scanner.nextLine());
                 System.out.println();
-                if (customerId != 0) {
-                    customerMenu(scanner, customerId);
+                if (index > customers.size()) {
+                    System.out.println("Index does not exist!");
+                }
+                if (index != 0) {
+                    customerMenu(scanner, customers.get(index - 1));
                 } else {
                     return;
                 }
@@ -122,7 +130,7 @@ public class UserInputHandler {
         }
     }
 
-    private void customerMenu(Scanner scanner, int customerId) throws SQLException {
+    private void customerMenu(Scanner scanner, Customer customer) throws SQLException {
         while (true) {
             //System.out.println();
             menuPrinter.printCustomerMenu();
@@ -134,7 +142,7 @@ public class UserInputHandler {
                     return;
                 }
                 case "1" -> {
-                    if (databaseHandler.customerHasRentedACar(customerId)){
+                    if (customer.carId() != 0){
                         System.out.println("You've already rented a car!");
                         break;
                     }
@@ -144,38 +152,52 @@ public class UserInputHandler {
                         System.out.println("\nChoose a company:");
                         int companyId = Integer.valueOf(scanner.nextLine());
                         if (companyId != 0) {
-                            rentACar(scanner, companyId, customerId);
+                            Optional<Customer> updatedCustomer = rentACar(scanner, companyId, customer.customerId());
+                            if (updatedCustomer.isPresent()) {
+                                customer = updatedCustomer.get();
+                            }
                         }
                     } else {
                         System.out.println();
                     }
                 }
                 case "2" -> {
-                    /*System.out.println("\nEnter the car name:");
-                    String carName = scanner.nextLine();
-                    databaseHandler.insertNewCar(carName, companyId);*/
+                    if (customer.carId() != 0){
+                        databaseHandler.returnCar(customer.customerId());
+                        System.out.println("You've returned a rented car!");
+                        customer = databaseHandler.getCustomer(customer.customerId());
+                    }
+                    else{
+                        System.out.println("You didn't rent a car!");
+
+                    }
                 }
                 case "3" -> {
-                    databaseHandler.selectAllCarsByCustomer(customerId);
+                    databaseHandler.selectAllCarsByCustomer(customer.customerId());
                 }
             }
             System.out.println();
         }
     }
 
-    private void rentACar(Scanner scanner, int companyId, int customerID) throws SQLException {
-        boolean carsExist = databaseHandler.selectAllCarsByCompany(companyId);
-        if (carsExist) {
+    private Optional<Customer> rentACar(Scanner scanner, int companyId, int customerID) throws SQLException {
+        List<Car> cars = databaseHandler.selectAllAveilableCarsByCompany(companyId);
+        if (!cars.isEmpty()) {
             System.out.println("0. Back");
             System.out.println("\nChoose a car:");
-            int carId = Integer.valueOf(scanner.nextLine());
-            if (carId != 0) {
-                databaseHandler.rentCar(scanner, carId, customerID);
+            int index = Integer.valueOf(scanner.nextLine());
+            if (index > cars.size()) {
+                System.out.println("Index does not exist!");
+            }
+            if (index != 0) {
+                databaseHandler.rentCar(cars.get(index - 1).carId(), customerID);
+                return Optional.of(databaseHandler.getCustomer(customerID));
             }
         }
         else {
             System.out.println("No available cars in the "+databaseHandler.findCompanyName(companyId)+" company");
         }
+        return Optional.empty();
     }
 
     private void createCustomer(Scanner scanner) {
