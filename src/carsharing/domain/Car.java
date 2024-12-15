@@ -1,4 +1,4 @@
 package carsharing.domain;
 
-public record Car(int carId, String name) {
+public record Car(int carId, String name, int companyId) {
 }
